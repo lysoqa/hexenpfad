@@ -116,6 +116,7 @@ function startDash(p, ix, iy) {
   p.dashT = B.dashTime;
   p.dashInv = B.dashInvuln;
   p.dashCharges--;
+  if (game.run) game.run.dashes++;
   p.charge = 0;
   p.act = null; // Sprint bricht jede Aktion ab
   Sound.play('dash');
@@ -144,7 +145,7 @@ function endDash(p) {
   }
 }
 
-function hurtPlayer(dmg, fx, fy) {
+function hurtPlayer(dmg, fx, fy, who) {
   const p = game.player;
   if (game.mode !== 'run' || p.invuln > 0 || p.dashInv > 0 || game.state !== 'play') return false;
   dmg = Math.max(1, Math.round(dmg * (1 - Math.min(0.5, pv('frost_skin') / 100))));
@@ -166,7 +167,7 @@ function hurtPlayer(dmg, fx, fy) {
     hitCircle(p.x, p.y, 55, (e) => addFrost(e, pv('frost_armor')));
     FX.ring(p.x, p.y - 4, 8, 55, ELEMENTS.frost.color, 0.35, 2);
   }
-  if (p.hp <= 0) { p.hp = 0; playerDied(); }
+  if (p.hp <= 0) { p.hp = 0; game.run.killer = who || null; playerDied(); }
   return true;
 }
 function healPlayer(n) {

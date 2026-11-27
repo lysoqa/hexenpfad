@@ -1,24 +1,18 @@
 'use strict';
 // ===== Spielablauf: Zustände, Zuflucht, Kammern, Spielschleife =====
-const GAME_VERSION = '0.1.0';
+const GAME_VERSION = '0.2.0';
 
-function loadStats() {
-  const def = { runs: 0, wins: 0, best: 0, kills: 0, weapon: 'sword' };
-  try { return Object.assign(def, JSON.parse(localStorage.getItem('hexenpfad-stats') || '{}')); } catch (err) { return def; }
-}
 const game = {
   state: 'title', stateT: 0, mode: 'hub', time: 0,
   room: null, player: null,
   enemies: [], pprojs: [], eprojs: [], zones: [], pickups: [], warnings: [], interact: [],
   depth: 0, run: null, cam: { x: 0, y: 0, shake: 0 }, hitstop: 0, timeScale: 1,
-  fade: null, banner: null, overlay: null, menuSel: 0, corpse: null, ambientT: 0,
+  fade: null, banner: null, overlay: null, menuSel: 0, corpse: null, ambientT: 0, flash: null, chronik: null,
   stats: loadStats(),
 };
-function saveStats() { localStorage.setItem('hexenpfad-stats', JSON.stringify(game.stats)); }
 function shake(n) { game.cam.shake = Math.max(game.cam.shake, n); }
 function showBanner(txt, sub, color, dur = 2.4) { game.banner = { text: txt, sub, color, t: 0, dur }; }
 function setGameState(s) { game.state = s; game.stateT = 0; }
-const newRunStats = () => ({ kills: 0, dmg: 0, taken: 0, time: 0 });
 
 function clearWorld() {
   game.enemies = []; game.pprojs = []; game.eprojs = []; game.zones = [];
@@ -62,6 +56,7 @@ function startHub() {
     });
   });
   game.enemies.push(makeDummy(128, 104), makeDummy(352, 104));
+  addChronist();
   placePlayer(game.room.entry.x, game.room.entry.y);
   Sound.music('hub');
 }
@@ -69,12 +64,10 @@ function startHub() {
 // ---------- Lauf ----------
 function startRun() {
   const w = game.player.weapon;
-  game.stats.runs++;
-  saveStats();
   game.player = makePlayer(w);
   game.mode = 'run';
   game.depth = 0;
-  game.run = newRunStats();
+  game.run = newRunStats(true);
   enterRoom({ kind: 'combat', reward: { type: 'boon', el: pick(ELEMENT_ORDER) } });
 }
 function enterRoom(spec) {
@@ -154,12 +147,16 @@ function updateRoom(dt) {
 function roomCleared() {
   const room = game.room;
   room.cleared = true;
+  game.run.rooms++;
   game.eprojs = [];
   Sound.play('clear');
   showBanner('Kammer gesäubert', null, '#c8f0d0', 1.6);
   const pos = findFloorNear(room, room.pw / 2, room.ph / 2 + 10);
-  game.pickups.push({ type: 'reward', reward: room.spec.reward, x: pos.x, y: pos.y, t: 0 });
-  FX.burst(pos.x, pos.y - 10, '#ffffff', 20, 100, 0.6, 2, { glow: 6 });
+  game.pickups.push({ type: 'reward', reward: room.spec.reward, x: pos.x, y: pos.y, t: 0, emit: 0 });
+  const P = rewardPal(room.spec.reward);
+  FX.ring(pos.x, pos.y, 4, 40, P.color, 0.5, 2);
+  FX.burst(pos.x, pos.y - 10, P.light, 24, 110, 0.7, 2, { glow: 6 });
+  Sound.play('charge');
 }
 function openDoors(quiet) {
   for (const d of game.room.doors) d.open = true;
@@ -174,13 +171,14 @@ function enterDoor(d) {
 function collectReward(r, from) {
   const p = game.player;
   Sound.play('pickup');
-  FX.burst(from.x, from.y - 12, doorColor({ kind: 'combat', reward: r }), 20, 90, 0.6, 2.5, { glow: 6 });
+  collectRewardFX(from);
   const done = () => openDoors();
-  const fallbackGold = () => { p.gold += 60; FX.text(p.x, p.y - 28, '+60 Gold', '#ffd24a', 8); done(); };
-  if (r.type === 'boon') openChoice(`${ELEMENTS[r.el].name}-Segen`, 'Wähle einen Segen', ELEMENTS[r.el].color, boonOptions(r.el, r.boost || 0), done);
+  const fallbackGold = () => { p.gold += 60; game.run.gold += 60; FX.text(p.x, p.y - 28, '+60 Gold', '#ffd24a', 8); done(); };
+  if (r.type === 'boon') openChoice(`${ELEMENTS[r.el].name}-Segen`, 'Wähle einen Segen', ELEMENTS[r.el].color, boonOptions(r.el, r.boost || 0), done, r.el);
   else if (r.type === 'gold') {
     const n = randi(...REWARD_VALUES.gold) + game.depth * 3;
     p.gold += n;
+    game.run.gold += n;
     FX.text(p.x, p.y - 28, `+${n} Gold`, '#ffd24a', 8);
     Sound.play('coin');
     done();
@@ -192,19 +190,27 @@ function collectReward(r, from) {
     done();
   } else if (r.type === 'forge') {
     const o = forgeOptions();
-    if (o.length) openChoice('Waffenschmiede', `Verbessere ${WEAPONS[p.weapon].name}`, WEAPONS[p.weapon].color, o, done); else fallbackGold();
+    if (o.length) openChoice('Waffenschmiede', `Verbessere ${WEAPONS[p.weapon].name}`, WEAPONS[p.weapon].color, o, done, 'forge'); else fallbackGold();
   } else if (r.type === 'star') {
     const o = starOptions();
-    if (o.length) openChoice('Sternsplitter', 'Verstärke einen deiner Segen', '#fff6a0', o, done); else fallbackGold();
+    if (o.length) openChoice('Sternsplitter', 'Verstärke einen deiner Segen', '#fff6a0', o, done, 'star'); else fallbackGold();
   }
 }
-function openChoice(title, sub, color, options, onDone) {
-  game.overlay = { title, sub, color, options, onDone, t: 0, sel: -1 };
+function openChoice(title, sub, color, options, onDone, theme) {
+  game.overlay = { title, sub, color, options, onDone, theme: theme || 'star', t: 0, sel: -1, hv: options.map(() => 0), parts: [], partT: 0, closing: null };
   setGameState('choice');
+  Sound.play('charge');
 }
 function updateChoice(dt) {
   const o = game.overlay;
   o.t += dt;
+  updateChoiceParts(o, dt);
+  o.hv = o.hv.map((v, i) => damp(v, o.sel === i && !o.closing ? 1 : 0, 14, dt));
+  if (o.closing) {
+    o.closing.t += dt;
+    if (o.closing.t >= 0.32) finishChoice(o);
+    return;
+  }
   const L = choiceLayout(o.options.length);
   let hover = -1;
   o.options.forEach((_, i) => {
@@ -220,8 +226,12 @@ function updateChoice(dt) {
   if (Input.clicked[0] && hover >= 0) choose = hover;
   if ((Input.hit('Enter') || Input.hit('KeyE')) && o.sel >= 0) choose = o.sel;
   if (choose < 0) return;
-  o.options[choose].apply();
+  o.sel = choose;
+  o.closing = { i: choose, t: 0 };
   Sound.play('choose');
+}
+function finishChoice(o) {
+  o.options[o.closing.i].apply();
   game.overlay = null;
   setGameState('play');
   const p = game.player;
@@ -245,6 +255,7 @@ function setupShop(room) {
         if (this.sold) return;
         if (p.gold < it.cost) { Sound.play('armor'); FX.text(p.x, p.y - 26, 'Zu wenig Gold', '#ff8a8a', 6); return; }
         p.gold -= it.cost;
+        game.run.goldSpent += it.cost;
         this.sold = true;
         Sound.play('coin');
         buyItem(it, el);
@@ -255,12 +266,12 @@ function setupShop(room) {
 }
 function buyItem(it, el) {
   const p = game.player;
-  const refund = () => { p.gold += it.cost; FX.text(p.x, p.y - 26, 'Nichts zu verbessern', '#ff8a8a', 6); };
-  if (it.id === 'boon') openChoice(`${ELEMENTS[el].name}-Segen`, 'Wähle einen Segen', ELEMENTS[el].color, boonOptions(el), null);
+  const refund = () => { p.gold += it.cost; game.run.goldSpent -= it.cost; FX.text(p.x, p.y - 26, 'Nichts zu verbessern', '#ff8a8a', 6); };
+  if (it.id === 'boon') openChoice(`${ELEMENTS[el].name}-Segen`, 'Wähle einen Segen', ELEMENTS[el].color, boonOptions(el), null, el);
   else if (it.id === 'heal') { healPlayer(p.maxHp * 0.5); Sound.play('heal'); }
   else if (it.id === 'heart') { p.maxHp += REWARD_VALUES.heart; healPlayer(REWARD_VALUES.heart); Sound.play('heal'); }
-  else if (it.id === 'star') { const o = starOptions(); if (o.length) openChoice('Sternsplitter', 'Verstärke einen deiner Segen', '#fff6a0', o, null); else refund(); }
-  else if (it.id === 'forge') { const o = forgeOptions(); if (o.length) openChoice('Waffenschmiede', `Verbessere ${WEAPONS[p.weapon].name}`, WEAPONS[p.weapon].color, o, null); else refund(); }
+  else if (it.id === 'star') { const o = starOptions(); if (o.length) openChoice('Sternsplitter', 'Verstärke einen deiner Segen', '#fff6a0', o, null, 'star'); else refund(); }
+  else if (it.id === 'forge') { const o = forgeOptions(); if (o.length) openChoice('Waffenschmiede', `Verbessere ${WEAPONS[p.weapon].name}`, WEAPONS[p.weapon].color, o, null, 'forge'); else refund(); }
 }
 function setupSpring(room) {
   game.interact.push({
@@ -288,6 +299,7 @@ function nearestInteract() {
 }
 function drawInteract(it) {
   const t = game.time;
+  if (it.kind === 'chronist') return drawChronist(it);
   if (it.kind === 'pedestal' || it.kind === 'shop') {
     shadowEllipse(it.x, it.y, 11, 3, 0.4);
     ctx.fillStyle = '#4c3b5e';
@@ -338,6 +350,7 @@ function drawInteract(it) {
   }
 }
 function drawInteractLight(it) {
+  if (it.kind === 'chronist') return drawChronistLight(it);
   if (it.kind === 'pedestal') glow(it.x, it.y - 20, 26, WEAPONS[it.weapon].color, game.player.weapon === it.weapon ? 0.15 : 0.35);
   else if (it.kind === 'shop' && !it.sold) glow(it.x, it.y - 20, 22, it.el ? ELEMENTS[it.el].color : '#ffd24a', 0.35);
   else if (it.kind === 'spring' && !it.used) glow(it.x, it.y - 4, 40, '#7affc8', 0.35);
@@ -359,8 +372,11 @@ function updatePickups(dt) {
         pk.x += Math.cos(a) * sp * dt;
         pk.y += Math.sin(a) * sp * dt;
       }
-      if (d < 8) { pk.done = true; p.gold++; Sound.play('coin'); }
-    } else if (pk.type === 'reward' && game.state === 'play') {
+      if (d < 8) { pk.done = true; p.gold++; game.run.gold++; Sound.play('coin'); }
+    } else if (pk.type === 'reward') {
+      pk.emit -= dt;
+      if (pk.emit <= 0) { pk.emit = 0.05; emitRewardParticle(pk); }
+      if (game.state !== 'play') continue;
       if (pk.t > 0.5 && dist(pk.x, pk.y, p.x, p.y) < 13) { pk.done = true; collectReward(pk.reward, pk); }
     }
   }
@@ -375,11 +391,11 @@ function playerDied() {
   game.timeScale = 0.3;
   Sound.play('die');
   FX.burst(p.x, p.y - 8, '#b583ff', 30, 100, 1, 2.5, { glow: 6 });
-  game.stats.kills += game.run.kills;
-  saveStats();
+  finishRun('death');
 }
 function bossDefeated(e) {
   game.run.kills++;
+  game.run.killsBy.boss = (game.run.killsBy.boss || 0) + 1;
   game.corpse = { x: e.x, y: e.y, t: 0, fxT: 0 };
   setGameState('winning');
   game.timeScale = 0.4;
@@ -388,9 +404,8 @@ function bossDefeated(e) {
   game.eprojs = [];
   game.warnings = [];
   for (const o of game.enemies) if (!o.dead) { o.dead = true; FX.burst(o.x, o.y - 6, '#ffffff', 10, 60, 0.4, 2); }
-  game.stats.wins++;
-  game.stats.kills += game.run.kills;
-  saveStats();
+  game.run.rooms++;
+  finishRun('win');
 }
 
 // ---------- Pause ----------
@@ -414,8 +429,7 @@ function updatePause() {
   else if (act === 2) Sound.toggleMusic();
   else if (act === 3) {
     if (game.mode === 'run') {
-      game.stats.kills += game.run.kills;
-      saveStats();
+      finishRun('abandon');
       setGameState('play');
       fadeTo(startHub);
     } else setGameState('title');
@@ -480,6 +494,7 @@ function update(dt) {
   game.time += dt;
   game.stateT += dt;
   if (game.banner) { game.banner.t += dt; if (game.banner.t > game.banner.dur) game.banner = null; }
+  if (game.flash) { game.flash.t += dt; if (game.flash.t > game.flash.dur) game.flash = null; }
   if (game.fade) {
     const f = game.fade;
     f.t += dt;
@@ -501,6 +516,7 @@ function update(dt) {
       stepWorld(dt);
       break;
     case 'choice': updateChoice(dt); break;
+    case 'chronik': updateChronik(dt); FX.update(dt); break;
     case 'pause': updatePause(); break;
     case 'dying':
     case 'winning':
@@ -578,6 +594,13 @@ function render() {
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
   }
 
+  if (game.flash) {
+    const f = game.flash, a = 1 - f.t / f.dur;
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = gRad(VIEW_W / 2, VIEW_H / 2, 40, 300, [[0, hexA(f.color, 0.05 * a)], [1, hexA(f.color, 0.35 * a)]]);
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    ctx.globalCompositeOperation = 'source-over';
+  }
   const st = game.state;
   if (st !== 'title') {
     drawHUD();
@@ -598,6 +621,7 @@ function render() {
   if (st === 'play' && Input.isDown('Tab')) drawBoonPanel();
   if (st === 'title') drawTitle();
   else if (st === 'choice') drawChoice();
+  else if (st === 'chronik') drawChronik();
   else if (st === 'pause') drawMenu('Pause', pauseItems(), game.menuSel, `Hexenpfad ${GAME_VERSION}`);
   else if (st === 'dead') drawEndScreen(false);
   else if (st === 'victory') drawEndScreen(true);

@@ -130,6 +130,7 @@ function damageEnemy(e, base, src, o = {}) {
   e.hp -= dmg;
   e.flash = 0.09;
   game.run.dmg += dmg;
+  if (!e.dummy) game.run.maxHit = Math.max(game.run.maxHit, dmg);
 
   const small = src === 'burn' || src === 'elem';
   const col = crit ? '#ffef5a' : src === 'burn' ? '#ff9a4a' : armorHit ? '#c8c8d8' : small ? '#fff3b0' : '#ffffff';
@@ -172,6 +173,7 @@ function killEnemy(e) {
   e.dead = true;
   if (e.boss) return bossDefeated(e);
   game.run.kills++;
+  game.run.killsBy[e.type] = (game.run.killsBy[e.type] || 0) + 1;
   FX.burst(e.x, e.y - e.h / 2, e.blood || '#ddd', 14, 90, 0.5, 2.5);
   FX.burst(e.x, e.y - 2, 'rgba(20,10,30,0.7)', 6, 30, 0.6, 4);
   Sound.play('edie');
@@ -349,7 +351,7 @@ function updateProjectiles(dt) {
     b.y += b.vy * dt;
     if (solidAt(room, b.x, b.y, true) || (!b.over && solidAt(room, b.x, b.y, false))) { b.life = 0; FX.burst(b.x, b.y, b.color, 4, 40, 0.2, 1.5); continue; }
     if (dist(b.x, b.y, p.x, p.y - 6) < b.r + p.r + 1) {
-      if (hurtPlayer(b.dmg, b.x, b.y)) b.life = 0;
+      if (hurtPlayer(b.dmg, b.x, b.y, b.who)) b.life = 0;
     }
   }
   game.eprojs = game.eprojs.filter((b) => b.life > 0);
@@ -394,8 +396,8 @@ function drawProjectileLights() {
   for (const b of game.pprojs) if (b.kind !== 'arrow' || b.star) glow(b.x, b.y - (b.z || 0), b.kind === 'bolt' ? 18 : 12, b.color, 0.5);
   for (const b of game.eprojs) glow(b.x, b.y, 12, b.color, 0.45);
 }
-function enemyShot(x, y, ang, speed, dmg, color = '#ff5a6a', r = 3) {
-  game.eprojs.push({ x, y, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, r, dmg, color, life: 5, over: true });
+function enemyShot(x, y, ang, speed, dmg, color = '#ff5a6a', r = 3, who = null) {
+  game.eprojs.push({ x, y, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, r, dmg, color, life: 5, over: true, who });
 }
 
 // ---------- Auswahl: Segen, Schmiede, Sternsplitter ----------
@@ -422,10 +424,17 @@ function newOption(b, boost) {
 }
 function upgradeOption(cur, tag) {
   const preview = { ...cur, level: cur.level + 1 };
-  return { boon: preview, tag: tag || `STUFE ${cur.level + 1}`, apply: () => { cur.level++; onBoonGained(cur); } };
+  return { boon: preview, tag: tag || `STUFE ${cur.level + 1}`, up: true, prevVal: boonVal(cur), apply: () => { cur.level++; onBoonGained(cur); } };
 }
 function onBoonGained(b) {
   const p = game.player;
+  // für die Chronik
+  const r = game.run;
+  if (r) {
+    r.picks.push(b.id);
+    if (b.rar === 3 && b.level === 1) r.legendary++;
+    if (b.kind === 'duo' && b.level === 1) r.duos++;
+  }
   if (b.id === 'storm_swift') p.dashCharges = Math.min(p.dashCharges + 1, maxDashes());
 }
 function boonOptions(el, boost = 0) {
@@ -460,6 +469,6 @@ function starOptions() {
 function forgeOptions() {
   const p = game.player;
   return shuffle(WEAPON_MODS[p.weapon].filter((m) => !p.mods.has(m.id))).slice(0, 3).map((m) => ({
-    mod: m, tag: 'WAFFE', apply: () => p.mods.add(m.id),
+    mod: m, tag: 'VERBESSERUNG', apply: () => p.mods.add(m.id),
   }));
 }

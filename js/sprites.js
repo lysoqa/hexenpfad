@@ -76,9 +76,10 @@ function drawSprite(spr, x, y, o = {}) {
   const w = spr.w * sc;
   const h = spr.h * sc * (o.sy || 1);
   const ww = w * (o.sx || 1);
-  if (o.alpha !== undefined) ctx.globalAlpha = o.alpha;
+  const base = ctx.globalAlpha;
+  if (o.alpha !== undefined) ctx.globalAlpha = base * o.alpha;
   ctx.drawImage(img, snap(x - ww / 2), snap(y - h), ww, h);
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha = base;
 }
 // gedreht zeichnen, (ox, oy) = Drehpunkt im Sprite
 function drawRotated(spr, x, y, ang, ox, oy, o = {}) {
@@ -86,7 +87,8 @@ function drawRotated(spr, x, y, ang, ox, oy, o = {}) {
   ctx.translate(snap(x), snap(y));
   ctx.rotate(ang);
   if (o.flipY) ctx.scale(1, -1);
-  if (o.alpha !== undefined) ctx.globalAlpha = o.alpha;
+  if (o.scale) ctx.scale(o.scale, o.scale);
+  if (o.alpha !== undefined) ctx.globalAlpha *= o.alpha;
   ctx.drawImage(o.white ? spr.white : spr.img, -ox, -oy);
   ctx.restore();
 }
@@ -291,3 +293,27 @@ SPR.boss = makeSprite(sym([
   '.kNNk.kNNNk....',
   '.kkkk.kkkkk....',
 ]), { R: '#5a2626', r: '#8a3a2a', N: '#331b1b', x: '#ff7a2a', y: '#ffe08a', o: '#e8dcc0', O: '#a8987a' });
+
+// ---------- Chronistin (NPC in der Zuflucht, zeigt die Statistik) ----------
+SPR.chronist = makeSprite([
+  '.....kkkk.....',
+  '....kttttk....',
+  '...kttttttk...',
+  '...ktTsssTk...',
+  '..kttTssesk...',
+  '..kttTsssSk...',
+  '..kttTwwwTk...',
+  '..kttkwwwkk...',
+  '.kttttkykttk..',
+  '.ktTttyyytTtk.',
+  'ktTkkkkkkkkkTk',
+  'ktTknwwwwwwnks',
+  'ktsknwcwwcwnkk',
+  '.kTknwwcwwwnk.',
+  '.kTkkkkkkkkkk.',
+  '.kTTtttttttTk.',
+  '.kTTttyyytTTk.',
+  '.kTTTtttttTTk.',
+  '..kTTTTTTTTk..',
+  '..kkkkkkkkkk..',
+], { t: '#3a7480', T: '#24505a', n: '#7a3a2a', w: '#f5ecd0', c: '#4fb8d8', s: '#f0d2bc', S: '#c99c8a', e: '#2a1a2a' });

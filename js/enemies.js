@@ -118,7 +118,7 @@ const AI = {
     } else if (e.state === 'strike') {
       if (!e.hitDone && e.t > 0.05) {
         e.hitDone = true;
-        if (d < 32 && Math.abs(angDiff(e.aim, a)) < 1.1) hurtPlayer(e.d.dmg * e.dmgMult, e.x, e.y);
+        if (d < 32 && Math.abs(angDiff(e.aim, a)) < 1.1) hurtPlayer(e.d.dmg * e.dmgMult, e.x, e.y, e.type);
       }
       if (e.t > 0.15) setState(e, 'recover');
     } else if (e.state === 'recover') {
@@ -145,7 +145,7 @@ const AI = {
       brake(e, dt);
       if (e.t >= 0.55) {
         const n = game.depth >= 5 ? 3 : 1;
-        for (let i = 0; i < n; i++) enemyShot(e.x + e.face * 4, e.y - 6, a + (i - (n - 1) / 2) * 0.28, 90, e.d.dmg * e.dmgMult, '#9fe05a', 3.5);
+        for (let i = 0; i < n; i++) enemyShot(e.x + e.face * 4, e.y - 6, a + (i - (n - 1) / 2) * 0.28, 90, e.d.dmg * e.dmgMult, '#9fe05a', 3.5, 'spitter');
         Sound.play('eshoot');
         setState(e, 'recover');
       }
@@ -170,7 +170,7 @@ const AI = {
         FX.burst(e.x, e.y - 4, '#c06090', 22, 110, 0.6, 3, { glow: 6 });
         Sound.play('boom');
         shake(3);
-        if (d < 36) hurtPlayer(e.d.dmg * e.dmgMult, e.x, e.y);
+        if (d < 36) hurtPlayer(e.d.dmg * e.dmgMult, e.x, e.y, e.type);
         for (const o of game.enemies) {
           if (o !== e && !o.dead && !o.boss && !o.dummy && o.spawnT <= 0 && dist(o.x, o.y, e.x, e.y) < 36) damageEnemy(o, 20, 'trap');
         }
@@ -194,7 +194,7 @@ const AI = {
     } else if (e.state === 'charge') {
       const hitWall = moveEnt(e, Math.cos(e.aim) * 270 * dt, Math.sin(e.aim) * 270 * dt);
       if (chance(dt * 30)) FX.burst(e.x, e.y, '#8a7a6a', 1, 20, 0.3, 2);
-      if (!e.hitDone && dist(e.x, e.y, p.x, p.y) < e.r + p.r + 4) { e.hitDone = true; hurtPlayer(e.d.dmg * e.dmgMult, e.x, e.y); }
+      if (!e.hitDone && dist(e.x, e.y, p.x, p.y) < e.r + p.r + 4) { e.hitDone = true; hurtPlayer(e.d.dmg * e.dmgMult, e.x, e.y, e.type); }
       if (hitWall) {
         setState(e, 'stun');
         shake(3);
@@ -224,7 +224,7 @@ const AI = {
       brake(e, dt);
       if (e.t >= 0.6) {
         const off = rand(0, TAU);
-        for (let i = 0; i < 10; i++) enemyShot(e.x, e.y - 14, off + (i / 10) * TAU, 70, e.d.dmg * e.dmgMult, '#e070ff', 3);
+        for (let i = 0; i < 10; i++) enemyShot(e.x, e.y - 14, off + (i / 10) * TAU, 70, e.d.dmg * e.dmgMult, '#e070ff', 3, 'eye');
         e.second = game.depth >= 8 ? 0.25 : 0;
         e.secondOff = off + TAU / 20;
         Sound.play('eshoot');
@@ -234,7 +234,7 @@ const AI = {
       brake(e, dt);
       if (e.second > 0) {
         e.second -= dt;
-        if (e.second <= 0) for (let i = 0; i < 10; i++) enemyShot(e.x, e.y - 14, e.secondOff + (i / 10) * TAU, 70, e.d.dmg * e.dmgMult, '#e070ff', 3);
+        if (e.second <= 0) for (let i = 0; i < 10; i++) enemyShot(e.x, e.y - 14, e.secondOff + (i / 10) * TAU, 70, e.d.dmg * e.dmgMult, '#e070ff', 3, 'eye');
       }
       if (e.t > 0.6) { setState(e, 'move'); e.cd = rand(2.4, 3.4); }
     }
@@ -257,7 +257,7 @@ const AI = {
         FX.burst(cx, cy, '#a8a0b0', 14, 80, 0.4, 2);
         Sound.play('slam');
         shake(2.5);
-        if (dist(cx, cy, p.x, p.y) < 26 + p.r) hurtPlayer(e.d.dmg * e.dmgMult, cx, cy);
+        if (dist(cx, cy, p.x, p.y) < 26 + p.r) hurtPlayer(e.d.dmg * e.dmgMult, cx, cy, e.type);
         setState(e, 'recover');
       }
     } else if (e.state === 'recover') {
@@ -305,7 +305,7 @@ const AI = {
           FX.slash(e.x, e.y - 14, e.aim, 62, 2.4, 'rgba(255,140,80,0.6)', 0.2);
           Sound.play('heavy');
           shake(3);
-          if (d < 64 && Math.abs(angDiff(e.aim, a)) < 1.25) hurtPlayer(BOSS.claw, e.x, e.y);
+          if (d < 64 && Math.abs(angDiff(e.aim, a)) < 1.25) hurtPlayer(BOSS.claw, e.x, e.y, 'boss');
         }
         if (e.t > 1.0) setState(e, 'idle');
         break;
@@ -317,9 +317,9 @@ const AI = {
           shake(7);
           FX.ring(e.x, e.y, 10, 70, '#ff8a3a', 0.45, 4);
           FX.burst(e.x, e.y, '#ff8a3a', 26, 130, 0.6, 3, { glow: 6 });
-          if (d < 68) hurtPlayer(BOSS.slam, e.x, e.y);
+          if (d < 68) hurtPlayer(BOSS.slam, e.x, e.y, 'boss');
           const n = e.phase === 2 ? 24 : 16, off = rand(0, TAU);
-          for (let i = 0; i < n; i++) enemyShot(e.x, e.y - 6, off + (i / n) * TAU, 95, BOSS.bullet, '#ff8a3a', 3.5);
+          for (let i = 0; i < n; i++) enemyShot(e.x, e.y - 6, off + (i / n) * TAU, 95, BOSS.bullet, '#ff8a3a', 3.5, 'boss');
         }
         if (e.t > 1.7) setState(e, 'idle');
         break;
@@ -331,13 +331,13 @@ const AI = {
         } else {
           const hit = moveEnt(e, Math.cos(e.aim) * 320 * dt, Math.sin(e.aim) * 320 * dt);
           if (chance(dt * 40)) FX.burst(e.x, e.y, '#a07050', 2, 30, 0.4, 3);
-          if (!e.hitDone && d < e.r + p.r + 6) { e.hitDone = true; hurtPlayer(BOSS.charge, e.x, e.y); }
+          if (!e.hitDone && d < e.r + p.r + 6) { e.hitDone = true; hurtPlayer(BOSS.charge, e.x, e.y, 'boss'); }
           if (hit || e.t > 0.85) {
             if (hit) {
               shake(5);
               Sound.play('slam');
               FX.burst(e.x, e.y - 10, '#d8d0c0', 16, 90, 0.5, 3);
-              if (e.phase === 2) for (let i = 0; i < 10; i++) enemyShot(e.x, e.y - 6, (i / 10) * TAU, 85, BOSS.bullet, '#ff8a3a', 3.5);
+              if (e.phase === 2) for (let i = 0; i < 10; i++) enemyShot(e.x, e.y - 6, (i / 10) * TAU, 85, BOSS.bullet, '#ff8a3a', 3.5, 'boss');
             }
             e.count--;
             if (e.count > 0) { e.sub = 'wind'; e.t = 0.2; } else setState(e, 'idle');
@@ -350,7 +350,7 @@ const AI = {
         if (e.spinT <= 0) {
           e.spinT = 0.09;
           const arms = e.phase === 2 ? 4 : 3;
-          for (let i = 0; i < arms; i++) enemyShot(e.x, e.y - 18, e.spin + (i / arms) * TAU, 80, BOSS.bullet, '#ffb05a', 3);
+          for (let i = 0; i < arms; i++) enemyShot(e.x, e.y - 18, e.spin + (i / arms) * TAU, 80, BOSS.bullet, '#ffb05a', 3, 'boss');
           e.spin += 0.22;
           Sound.play('eshoot');
         }
@@ -409,7 +409,7 @@ function updateWarnings(dt) {
       FX.burst(w.x, w.y, '#5a4a40', 8, 60, 0.5, 3);
       Sound.play('boom');
       shake(2);
-      if (dist(w.x, w.y, p.x, p.y) < w.r + p.r) hurtPlayer(w.dmg, w.x, w.y);
+      if (dist(w.x, w.y, p.x, p.y) < w.r + p.r) hurtPlayer(w.dmg, w.x, w.y, 'boss');
     }
   }
   game.warnings = game.warnings.filter((w) => !w.done);

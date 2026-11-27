@@ -20,18 +20,21 @@ Hat nichts mit Soulgrind oder Aschenreich zu tun (kein Code von dort übernehmen
 | `js/data.js` | **Alle Werte**: Heldin, Waffen, Waffen-Upgrades, Elemente, Segen, Passive, Duos, Belohnungen, Händler, Gegner, Boss, Lauf-Ablauf |
 | `js/sprites.js` | Pixel-Grafiken (Heldin, Waffen, Gegner, Boss) |
 | `js/fx.js` | Partikel, Hieb-Bögen, Ringe, Blitze, Nachbilder, Schadenszahlen |
+| `js/emblems.js` | Animierte Embleme (Elemente `EMBLEMS`, Belohnungen `TYPE_EMBLEMS`), Belohnungs-Altar in der Kammer (Runenkreis, Lichtsäule, Teilchen, Einsammel-Effekt) |
 | `js/world.js` | Zufallsräume (`generateRoom`), Zuflucht (`buildHub`), Kollision, Türen, Fackeln, Stachelfallen |
 | `js/combat.js` | Schaden (`damageEnemy`), Element-Zustände, Segen-Logik, Siegel-Zonen, Geschosse, Auswahl-Optionen |
 | `js/player.js` | Heldin: Bewegung, Sprint, die 4 Waffen (`WEAPON_LOGIC`), Siegel (Q) |
 | `js/enemies.js` | Gegner-KI (`AI`), Boss Grimmhorn, Wellen, Warnflächen |
-| `js/ui.js` | HUD, Karten-Auswahl, Menüs, Symbole |
+| `js/ui.js` | HUD, Karten-Auswahl (Kartendesign `drawCard`, Animation, Hintergrund-Teilchen), Menüs |
+| `js/chronik.js` | Statistik: sammeln pro Lauf (`game.run`), am Laufende eintragen (`finishRun`), speichern (`hexenpfad-stats`), Chronistin-NPC und Chronik-Bildschirm (5 Seiten) |
 | `js/main.js` | Spielablauf (Zuflucht, Kammern, Türen, Belohnungen, Händler, Tod/Sieg), Kamera, Spielschleife, `GAME_VERSION` |
 
 ## Spielregeln (vom Nutzer festgelegt)
 - Heldin ist weiblich. Steuerung: WASD laufen, Maus zielen, LMT Angriff, RMT Spezial, Q Siegel, **Leertaste = Sprint (Dash)**, E benutzen, Tab Segen ansehen, Esc Pause.
 - Alles soll sich **flüssig** anfühlen: Eingaben werden kurz gepuffert, Sprint bricht Aktionen ab, Kombos gehen ineinander über, Treffer-Stopp und Bildschirmwackeln.
 - Waffen: **Schwert** (Mondklinge), **Lanze** (Sturmlanze), **Bogen mit Schuss-Abklingzeit** (Sternbogen), **Stab mit Magie** (Aschestab). Auswahl in der Zuflucht an Waffenständern.
-- Startgebiet = Zuflucht (Waffen, Übungspuppen, Tor zum Lauf).
+- Startgebiet = Zuflucht (Waffen, Übungspuppen, Tor zum Lauf, **Chronistin** mit Statistik: Übersicht, Waffen, Elemente, Gegner, Verlauf).
+- Belohnungen sollen **krass und schön** aussehen (Nutzerwunsch): Altar mit Runenkreis und Lichtsäule, animierte Embleme, aufwendige Karten je nach Seltenheit.
 - Ein Lauf: 12 Kammern, zufällig erzeugt. Hinter jeder Tür steht vorher sichtbar die Belohnung. Kammer 6: Händler zur Auswahl, Kammer 11: Wächterkammer, Kammer 12: Boss **Grimmhorn, Wächter des Tores** (Wut ab 50%).
 - Element-Segen (Feuer, Frost, Blitz, Schatten) für Angriff, Spezial, Siegel, Sprint, dazu Passive und Duo-Segen. **Element-Stufe** = Summe der Segen-Stufen eines Elements; jede Stufe macht alle Effekte dieses Elements stärker. Gleichen Segen nochmal wählen = Stufe hoch.
 

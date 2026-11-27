@@ -361,7 +361,7 @@ function updateSpikes(room, dt) {
     g.state = st;
     if (st !== 'up') continue;
     const inside = (x, y) => g.tiles.some(([tx, ty]) => x >= tx * TILE && x < tx * TILE + TILE && y >= ty * TILE && y < ty * TILE + TILE);
-    if (inside(p.x, p.y)) hurtPlayer(12, p.x, p.y + 10);
+    if (inside(p.x, p.y)) hurtPlayer(12, p.x, p.y + 10, 'spike');
     for (const e of game.enemies) {
       if (e.dead || e.fly || e.boss || e.spawnT > 0) continue;
       const key = `${g.uid}:${g.id}`;

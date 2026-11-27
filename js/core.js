@@ -119,14 +119,15 @@ function text(str, x, y, o = {}) {
   setFont(size, o);
   ctx.textAlign = o.align || 'left';
   ctx.textBaseline = o.base || 'top';
-  ctx.globalAlpha = o.alpha ?? 1;
+  const base = ctx.globalAlpha; // Text übernimmt die aktuelle Durchsichtigkeit (z. B. beim Einblenden)
+  ctx.globalAlpha = base * (o.alpha ?? 1);
   if (o.shadow !== false) {
     ctx.fillStyle = 'rgba(8,4,14,0.9)';
     ctx.fillText(str, x + size * 0.07, y + size * 0.09);
   }
   ctx.fillStyle = o.color || '#efe6d8';
   ctx.fillText(str, x, y);
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha = base;
 }
 function textWidth(str, size, o = {}) {
   setFont(size, o);
@@ -161,12 +162,13 @@ function glowSprite(color) {
 }
 function glow(x, y, r, color, alpha = 0.5) {
   if (r <= 0 || alpha <= 0) return;
+  const base = ctx.globalAlpha;
   ctx.globalCompositeOperation = 'lighter';
-  ctx.globalAlpha = Math.min(1, alpha);
+  ctx.globalAlpha = Math.min(1, alpha) * base;
   ctx.imageSmoothingEnabled = true;
   ctx.drawImage(glowSprite(color), x - r, y - r, r * 2, r * 2);
   ctx.imageSmoothingEnabled = false;
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha = base;
   ctx.globalCompositeOperation = 'source-over';
 }
 

@@ -1,52 +1,8 @@
 'use strict';
 // ===== Anzeige: HUD, Karten-Auswahl, Menüs, Symbole =====
 
-// ---------- Symbole ----------
-function drawElIcon(el, x, y, s, alpha = 1) {
-  const E = ELEMENTS[el];
-  ctx.globalAlpha = alpha;
-  if (el === 'fire') {
-    ctx.fillStyle = E.color;
-    ctx.beginPath();
-    ctx.moveTo(x, y - s);
-    ctx.quadraticCurveTo(x + s, y, x, y + s * 0.9);
-    ctx.quadraticCurveTo(x - s, y, x, y - s);
-    ctx.fill();
-    ctx.fillStyle = E.light;
-    ctx.beginPath();
-    ctx.moveTo(x, y - s * 0.2);
-    ctx.quadraticCurveTo(x + s * 0.5, y + s * 0.4, x, y + s * 0.8);
-    ctx.quadraticCurveTo(x - s * 0.5, y + s * 0.4, x, y - s * 0.2);
-    ctx.fill();
-  } else if (el === 'frost') {
-    ctx.strokeStyle = E.color;
-    ctx.lineWidth = Math.max(1, s / 4);
-    for (let i = 0; i < 3; i++) {
-      const a = (i / 3) * Math.PI + Math.PI / 2;
-      ctx.beginPath();
-      ctx.moveTo(x - Math.cos(a) * s, y - Math.sin(a) * s);
-      ctx.lineTo(x + Math.cos(a) * s, y + Math.sin(a) * s);
-      ctx.stroke();
-    }
-    fillCircle(x, y, s * 0.3, E.light);
-  } else if (el === 'storm') {
-    ctx.fillStyle = E.color;
-    ctx.beginPath();
-    ctx.moveTo(x + s * 0.3, y - s);
-    ctx.lineTo(x - s * 0.6, y + s * 0.15);
-    ctx.lineTo(x - s * 0.05, y + s * 0.15);
-    ctx.lineTo(x - s * 0.35, y + s);
-    ctx.lineTo(x + s * 0.65, y - s * 0.2);
-    ctx.lineTo(x + s * 0.1, y - s * 0.2);
-    ctx.closePath();
-    ctx.fill();
-  } else if (el === 'shadow') {
-    fillCircle(x, y, s * 0.85, E.color);
-    fillCircle(x + s * 0.4, y - s * 0.25, s * 0.7, '#140c1e');
-    fillCircle(x - s * 0.3, y + s * 0.1, s * 0.15, E.light);
-  }
-  ctx.globalAlpha = 1;
-}
+// ---------- Symbole (die Zeichnungen stehen in emblems.js) ----------
+function drawElIcon(el, x, y, s, alpha = 1) { drawEmblem(el, x, y, s, { alpha }); }
 function specRewardType(spec) {
   if (['shop', 'spring', 'boss', 'start'].includes(spec.kind)) return spec.kind;
   return spec.reward.type;
@@ -69,83 +25,10 @@ function rewardLabel(spec) {
 }
 function drawRewardIcon(spec, x, y, alpha = 1) {
   const t = specRewardType(spec);
-  drawTypeIcon(t, spec.reward && spec.reward.el, x, y, alpha);
-  if (spec.kind === 'elite' || spec.kind === 'guardian') drawSkull(x + 7, y - 5, 2.5, '#ff5a4a', alpha);
+  drawTypeEmblem(t, x, y, 6, { el: spec.reward && spec.reward.el, alpha });
+  if (spec.kind === 'elite' || spec.kind === 'guardian') drawTypeEmblem('boss', x + 8, y - 6, 2.8, { alpha });
 }
-function drawTypeIcon(t, el, x, y, alpha = 1, s = 1) {
-  ctx.globalAlpha = alpha;
-  switch (t) {
-    case 'boon': drawElIcon(el, x, y, 6 * s, alpha); break;
-    case 'gold':
-      fillCircle(x, y, 4.5 * s, '#8a6a1a');
-      fillCircle(x, y, 3.8 * s, '#ffd24a');
-      fillCircle(x - 1 * s, y - 1 * s, 1.5 * s, '#fff6c0');
-      break;
-    case 'heart':
-      ctx.fillStyle = '#ff6a7a';
-      ctx.beginPath();
-      ctx.moveTo(x, y + 5 * s);
-      ctx.bezierCurveTo(x - 7 * s, y - 1 * s, x - 3 * s, y - 6 * s, x, y - 2 * s);
-      ctx.bezierCurveTo(x + 3 * s, y - 6 * s, x + 7 * s, y - 1 * s, x, y + 5 * s);
-      ctx.fill();
-      fillCircle(x - 2.2 * s, y - 2 * s, 1 * s, '#ffd0d8');
-      break;
-    case 'forge':
-      ctx.fillStyle = '#8a5a32';
-      ctx.fillRect(x - 0.8 * s, y - 2 * s, 1.6 * s, 7 * s);
-      ctx.fillStyle = '#c8ccd8';
-      ctx.fillRect(x - 4.5 * s, y - 5 * s, 9 * s, 3.5 * s);
-      ctx.fillStyle = '#ffb070';
-      ctx.fillRect(x - 4.5 * s, y - 5 * s, 9 * s, 1 * s);
-      break;
-    case 'star':
-      ctx.fillStyle = '#fff6a0';
-      ctx.beginPath();
-      for (let i = 0; i < 8; i++) {
-        const a = (i / 8) * TAU - Math.PI / 2, r = (i % 2 ? 2 : 6) * s;
-        i ? ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r) : ctx.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
-      }
-      ctx.fill();
-      break;
-    case 'spring':
-      ctx.fillStyle = '#7affc8';
-      ctx.beginPath();
-      ctx.moveTo(x, y - 6 * s);
-      ctx.quadraticCurveTo(x + 5 * s, y + 1 * s, x, y + 5 * s);
-      ctx.quadraticCurveTo(x - 5 * s, y + 1 * s, x, y - 6 * s);
-      ctx.fill();
-      fillCircle(x - 1.5 * s, y + 1 * s, 1 * s, '#e0fff4');
-      break;
-    case 'shop':
-      fillCircle(x, y + 1 * s, 4.5 * s, '#8a5a32');
-      ctx.fillStyle = '#5a3a1e';
-      ctx.fillRect(x - 2 * s, y - 5 * s, 4 * s, 2 * s);
-      fillCircle(x, y + 1.5 * s, 1.8 * s, '#ffd24a');
-      break;
-    case 'boss': drawSkull(x, y, 5 * s, '#ff4a3a', alpha); break;
-    case 'start':
-      ctx.fillStyle = '#b583ff';
-      ctx.beginPath();
-      ctx.moveTo(x, y - 6 * s); ctx.lineTo(x + 4 * s, y); ctx.lineTo(x, y + 6 * s); ctx.lineTo(x - 4 * s, y);
-      ctx.fill();
-      break;
-    case 'heal':
-      ctx.fillStyle = '#ff6a7a';
-      ctx.fillRect(x - 3 * s, y - 1 * s, 6 * s, 2 * s);
-      ctx.fillRect(x - 1 * s, y - 3 * s, 2 * s, 6 * s);
-      break;
-  }
-  ctx.globalAlpha = 1;
-}
-function drawSkull(x, y, s, color, alpha = 1) {
-  ctx.globalAlpha = alpha;
-  fillCircle(x, y - s * 0.2, s, color);
-  ctx.fillStyle = color;
-  ctx.fillRect(x - s * 0.6, y + s * 0.4, s * 1.2, s * 0.7);
-  fillCircle(x - s * 0.4, y - s * 0.2, s * 0.28, '#140c1e');
-  fillCircle(x + s * 0.4, y - s * 0.2, s * 0.28, '#140c1e');
-  ctx.globalAlpha = 1;
-}
+function drawTypeIcon(t, el, x, y, alpha = 1, s = 1) { drawTypeEmblem(t, x, y, 5.5 * s, { el, alpha }); }
 
 // ---------- Aufsammelbares ----------
 function drawPickup(pk) {
@@ -157,29 +40,11 @@ function drawPickup(pk) {
     ctx.fillRect(pk.x - 2 * w, pk.y - 4.5, 4 * w, 4);
     return;
   }
-  const bob = Math.sin(game.time * 3) * 2;
-  shadowEllipse(pk.x, pk.y, 7, 2.5, 0.4);
-  const spec = { kind: 'combat', reward: pk.reward };
-  if (pk.reward.type === 'boon') {
-    // drehender Kristall
-    const c = ELEMENTS[pk.reward.el];
-    const w = 5 * Math.abs(Math.cos(game.time * 2));
-    ctx.fillStyle = c.dark;
-    ctx.beginPath();
-    ctx.moveTo(pk.x, pk.y - 22 + bob); ctx.lineTo(pk.x + w + 1, pk.y - 14 + bob); ctx.lineTo(pk.x, pk.y - 5 + bob); ctx.lineTo(pk.x - w - 1, pk.y - 14 + bob);
-    ctx.fill();
-    ctx.fillStyle = c.color;
-    ctx.beginPath();
-    ctx.moveTo(pk.x, pk.y - 21 + bob); ctx.lineTo(pk.x + w, pk.y - 14 + bob); ctx.lineTo(pk.x, pk.y - 6 + bob); ctx.lineTo(pk.x - w, pk.y - 14 + bob);
-    ctx.fill();
-    ctx.fillStyle = c.light;
-    ctx.fillRect(pk.x - 1, pk.y - 18 + bob, 2, 4);
-  } else drawRewardIcon(spec, pk.x, pk.y - 12 + bob);
+  drawRewardAltar(pk);
 }
 function drawPickupLight(pk) {
   if (pk.type === 'coin') { glow(pk.x, pk.y - 3, 8, '#ffd24a', 0.3); return; }
-  const col = pk.reward.type === 'boon' ? ELEMENTS[pk.reward.el].color : REWARD_COLORS[pk.reward.type];
-  glow(pk.x, pk.y - 13, 34, col, 0.5 + Math.sin(game.time * 3) * 0.1);
+  drawRewardAltarLight(pk);
 }
 
 // ---------- HUD ----------
@@ -391,82 +256,306 @@ function drawBoonPanel() {
 
 // ---------- Karten-Auswahl ----------
 function choiceLayout(n) {
-  const cw = 138, gap = 10, total = n * cw + (n - 1) * gap;
-  return { cw, gap, x0: VIEW_W / 2 - total / 2, y: 62, h: 168 };
+  const cw = 138, gap = 12, total = n * cw + (n - 1) * gap;
+  return { cw, gap, x0: VIEW_W / 2 - total / 2, y: 52, h: 186 };
 }
+// Teilchen im Hintergrund der Auswahl, passend zum Element
+function updateChoiceParts(o, dt) {
+  o.partT -= dt;
+  while (o.partT <= 0) {
+    o.partT += 0.035;
+    const th = o.theme;
+    let q;
+    if (th === 'fire') q = { x: rand(0, VIEW_W), y: VIEW_H + 4, vx: rand(-6, 6), vy: rand(-42, -18), color: pick(['#ff8a3a', '#ffd08a', '#ff5a1a']) };
+    else if (th === 'frost') q = { x: rand(-30, VIEW_W), y: -4, vx: rand(4, 16), vy: rand(10, 24), color: pick(['#ffffff', '#bff0ff', '#7fd6ff']) };
+    else if (th === 'storm') q = { x: rand(0, VIEW_W), y: rand(0, VIEW_H), vx: rand(-70, 70), vy: rand(-70, 70), color: pick(['#fff6a0', '#ffffff', '#ffe95a']), life: 0.25 };
+    else if (th === 'shadow') {
+      const a = rand(0, TAU), d = rand(200, 260);
+      q = { x: VIEW_W / 2 + Math.cos(a) * d, y: VIEW_H / 2 + Math.sin(a) * d * 0.6, vx: -Math.cos(a) * d * 0.22, vy: -Math.sin(a) * d * 0.13, color: pick(['#b583ff', '#ead9ff', '#7a4ad8']) };
+    } else if (th === 'forge') q = { x: rand(0, VIEW_W), y: VIEW_H + 4, vx: rand(-20, 20), vy: rand(-80, -45), color: pick(['#ffd08a', '#ff8a3a']), grav: 30 };
+    else q = { x: rand(0, VIEW_W), y: rand(0, VIEW_H), vx: 0, vy: rand(-6, -2), color: pick(['#fff6a0', '#ffffff']), life: 1.2 };
+    q.life = q.life || rand(2.5, 4);
+    q.max = q.life;
+    q.size = rand(0.8, 1.8);
+    q.ph = rand(0, TAU);
+    o.parts.push(q);
+  }
+  for (const q of o.parts) {
+    q.life -= dt;
+    q.vy += (q.grav || 0) * dt;
+    q.x += q.vx * dt + Math.sin(game.time * 2 + q.ph) * 5 * dt;
+    q.y += q.vy * dt;
+  }
+  o.parts = o.parts.filter((q) => q.life > 0);
+}
+function ornamentLine(cx, y, half, color) {
+  ctx.fillStyle = gLin(cx - half, 0, cx + half, 0, [[0, hexA(color, 0)], [0.5, hexA(color, 0.9)], [1, hexA(color, 0)]]);
+  ctx.fillRect(cx - half, y, half * 2, 0.6);
+  ctx.fillStyle = color;
+  diamond(cx, y + 0.3, 2.3);
+  for (const sg of [-1, 1]) diamond(cx + sg * 11, y + 0.3, 1.2);
+  ctx.fillStyle = '#140a1e';
+  diamond(cx, y + 0.3, 1);
+}
+function perimeterPoint(x, y, w, h, k) {
+  let d = k * 2 * (w + h);
+  if (d < w) return [x + d, y];
+  d -= w;
+  if (d < h) return [x + w, y + d];
+  d -= h;
+  if (d < w) return [x + w - d, y + h];
+  return [x, y + h - (d - w)];
+}
+// Text mit hervorgehobener Zahl
+function richText(str, val, cx, y, maxW, size, color, hi) {
+  const re = val ? new RegExp(`(^|[^0-9])(${val}%?)(?![0-9])`) : null;
+  for (const l of wrapText(str, maxW, size)) {
+    const m = re ? re.exec(l) : null;
+    if (!m) text(l, cx, y, { size, align: 'center', color });
+    else {
+      const idx = m.index + m[1].length;
+      const a = l.slice(0, idx), mid = m[2], c = l.slice(idx + mid.length);
+      const wa = textWidth(a, size), wm = textWidth(mid, size, { bold: true }), wc = textWidth(c, size);
+      let sx = cx - (wa + wm + wc) / 2;
+      text(a, sx, y, { size, color });
+      sx += wa;
+      text(mid, sx, y, { size, bold: true, color: hi });
+      sx += wm;
+      text(c, sx, y, { size, color });
+    }
+    y += size * 1.3;
+  }
+  return y;
+}
+function pill(cx, y, label, color, textColor, size = 5) {
+  ctx.letterSpacing = '0.6px';
+  const w = textWidth(label, size, { bold: true }) + 10;
+  roundRect(cx - w / 2, y, w, size + 3.5, (size + 3.5) / 2);
+  ctx.fillStyle = hexA(color, 0.16);
+  ctx.fill();
+  ctx.strokeStyle = hexA(color, 0.6);
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+  text(label, cx + 0.3, y + 1.6, { size, align: 'center', bold: true, color: textColor });
+  ctx.letterSpacing = '0px';
+}
+
 function drawChoice() {
   const o = game.overlay;
-  ctx.fillStyle = 'rgba(6,3,10,0.74)';
+  const close = o.closing ? clamp(o.closing.t / 0.32, 0, 1) : 0;
+  const intro = clamp(o.t / 0.3, 0, 1);
+  ctx.fillStyle = `rgba(5,2,9,${0.84 * intro})`;
   ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-  text(o.title, VIEW_W / 2, 18, { size: 16, title: true, align: 'center', color: o.color || '#f0e0ff' });
-  if (o.sub) text(o.sub, VIEW_W / 2, 40, { size: 6.5, align: 'center', color: '#b8aec8' });
+  glow(VIEW_W / 2, VIEW_H * 0.55, 260, o.color, 0.2 * intro);
+  for (const q of o.parts) {
+    const a = Math.min(1, (q.life / q.max) * 2, (q.max - q.life) * 3) * intro;
+    ctx.globalAlpha = a * 0.9;
+    ctx.fillStyle = q.color;
+    ctx.fillRect(q.x - q.size / 2, q.y - q.size / 2, q.size, q.size);
+    ctx.globalAlpha = 1;
+    glow(q.x, q.y, q.size * 3.5, q.color, 0.3 * a);
+  }
+  ctx.globalAlpha = intro * (1 - close);
+  text(o.title, VIEW_W / 2, 9, { size: 16, title: true, align: 'center', color: o.color });
+  ornamentLine(VIEW_W / 2, 31, textWidth(o.title, 16, { title: true }) / 2 + 50, o.color);
+  if (o.sub) text(o.sub, VIEW_W / 2, 36, { size: 6, align: 'center', color: '#b8aec8' });
+  ctx.globalAlpha = 1;
   const L = choiceLayout(o.options.length);
   o.options.forEach((opt, i) => {
-    const appear = clamp((o.t - i * 0.07) / 0.22, 0, 1);
-    const ease = 1 - (1 - appear) * (1 - appear);
+    const kk = clamp((o.t - 0.08 - i * 0.09) / 0.32, 0, 1);
+    if (kk <= 0) return;
     const x = L.x0 + i * (L.cw + L.gap);
-    const sel = o.sel === i;
-    const y = L.y + (1 - ease) * 14 - (sel ? 3 : 0);
-    ctx.globalAlpha = ease;
-    drawCard(opt, x, y, L.cw, L.h, sel, i);
-    ctx.globalAlpha = 1;
-  });
-  text('Karte anklicken oder Taste 1–3', VIEW_W / 2, VIEW_H - 18, { size: 6, align: 'center', color: '#8a7aa0' });
-}
-function drawCard(opt, x, y, w, h, sel, i) {
-  const b = opt.boon;
-  const color = b ? ELEMENTS[boonEls(b)[0]].color : opt.mod ? WEAPONS[game.player.weapon].color : '#fff';
-  const color2 = b && b.kind === 'duo' ? ELEMENTS[boonEls(b)[1]].color : color;
-  const a = ctx.globalAlpha;
-  if (sel) glow(x + w / 2, y + h / 2, w * 0.9, color, 0.25 * a);
-  ctx.globalAlpha = a;
-  ctx.fillStyle = '#140d1e';
-  roundRect(x, y, w, h, 4);
-  ctx.fill();
-  const gr = ctx.createLinearGradient(x, y, x + w, y);
-  gr.addColorStop(0, color);
-  gr.addColorStop(1, color2);
-  ctx.strokeStyle = gr;
-  ctx.lineWidth = sel ? 2 : 1;
-  ctx.stroke();
-  // Kopfzeile
-  ctx.fillStyle = hexA(color, 0.18);
-  ctx.fillRect(x + 1, y + 1, w - 2, 22);
-  text(`${i + 1}`, x + 6, y + 6, { size: 6, color: '#8a7aa0', bold: true });
-  if (b) {
-    const els = boonEls(b);
-    els.forEach((el, k) => drawElIcon(el, x + w / 2 - (els.length - 1) * 6 + k * 12, y + 12, 6));
-    const kind = b.kind === 'slot' ? SLOT_NAMES[b.slot].toUpperCase() : b.kind === 'duo' ? 'DUO' : 'PASSIV';
-    text(kind, x + w - 6, y + 6, { size: 5, align: 'right', color: '#c8bcd8', bold: true });
-    const nameLines = wrapText(boonName(b), w - 12, 10, { title: true });
-    let yy = y + 28;
-    nameLines.forEach((l) => { text(l, x + w / 2, yy, { size: 10, title: true, align: 'center' }); yy += 12; });
-    text(RARITY[b.rar].name.toUpperCase(), x + w / 2, yy, { size: 5.5, align: 'center', color: RARITY[b.rar].color, bold: true });
-    yy += 8;
-    text(opt.tag, x + w / 2, yy, { size: 5.5, align: 'center', color: '#ffd86a', bold: true });
-    yy += 11;
-    for (const l of wrapText(boonDesc(b), w - 14, 6.5)) { text(l, x + w / 2, yy, { size: 6.5, align: 'center', color: '#ece4f2' }); yy += 8.5; }
-    if (b.kind === 'slot' && b.slot !== 'dash') {
-      yy += 3;
-      for (const l of wrapText(STATUS_TEXT[b.el], w - 16, 5.5)) { text(l, x + w / 2, yy, { size: 5.5, align: 'center', color: '#9a8ab0', italic: true }); yy += 7; }
+    const hv = o.hv[i] || 0;
+    let y = L.y + (1 - easeOut(kk)) * 16 - hv * 4;
+    let sc = 1 + hv * 0.025, alpha = Math.min(1, kk * 2), flash = 0;
+    if (o.closing) {
+      if (o.closing.i === i) { sc += easeOut(close) * 0.06; flash = 1 - close; }
+      else { alpha *= 1 - close; y += close * 14; }
     }
-    // Element-Stufe davor/danach
-    const isNew = !opt.tag.startsWith('STUFE') || opt.tag.includes('→');
-    els.forEach((el, k) => {
-      const now = resonance(el);
-      const yb = y + h - 20 + k * 8 - (els.length - 1) * 4;
-      text(`${ELEMENTS[el].name}-Stufe ${now} → ${now + 1}`, x + w / 2, yb, { size: 5.5, align: 'center', color: ELEMENTS[el].color, bold: true });
-    });
-    if (els.length === 1) text(`alle ${ELEMENTS[els[0]].name}-Effekte +${Math.round(STATUS.resoStep * 100)}%`, x + w / 2, y + h - 11, { size: 5, align: 'center', color: '#8a7aa0' });
-    void isNew;
+    const cx = x + L.cw / 2, cy = y + L.h / 2;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(cx, cy);
+    ctx.scale(Math.max(0.02, easeOutBack(kk)) * sc, sc); // Karte dreht sich herein
+    ctx.translate(-cx, -cy);
+    drawCard(opt, x, y, L.cw, L.h, { i, hv });
+    if (flash > 0) {
+      roundRect(x, y, L.cw, L.h, 5);
+      ctx.fillStyle = `rgba(255,255,255,${0.6 * flash})`;
+      ctx.fill();
+    }
+    ctx.restore();
+  });
+  ctx.globalAlpha = intro * (1 - close);
+  text('Karte anklicken oder Taste 1–3', VIEW_W / 2, VIEW_H - 13, { size: 5.5, align: 'center', color: '#8a7aa0' });
+  ctx.globalAlpha = 1;
+}
+
+function drawCard(opt, x, y, w, h, st) {
+  const t = game.time, b = opt.boon, hv = st.hv;
+  const els = b ? boonEls(b) : [];
+  const color = b ? ELEMENTS[els[0]].color : WEAPONS[game.player.weapon].color;
+  const color2 = els.length > 1 ? ELEMENTS[els[1]].color : color;
+  const light = b ? ELEMENTS[els[0]].light : '#ffffff';
+  const rar = b ? b.rar : 1;
+  const R = RARITY[rar];
+  const cx = x + w / 2;
+
+  // Leuchten und Schatten
+  glow(cx, y + h / 2, w * (0.7 + 0.3 * hv), color, 0.1 + 0.22 * hv + (rar >= 2 ? 0.06 : 0));
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  roundRect(x + 2, y + 4, w, h, 5);
+  ctx.fill();
+  // Körper
+  roundRect(x, y, w, h, 5);
+  ctx.fillStyle = '#110a1b';
+  ctx.fill();
+  ctx.save();
+  roundRect(x, y, w, h, 5);
+  ctx.clip();
+  ctx.fillStyle = gLin(0, y, 0, y + h * 0.62, [[0, hexA(color, 0.34)], [1, hexA(color, 0)]]);
+  ctx.fillRect(x, y, w, h);
+  if (els.length > 1) {
+    ctx.fillStyle = gLin(x, 0, x + w, 0, [[0, hexA(color2, 0)], [1, hexA(color2, 0.3)]]);
+    ctx.fillRect(x, y, w, h * 0.62);
+  }
+  ctx.strokeStyle = hexA(color, 0.06);
+  ctx.lineWidth = 0.6;
+  ctx.beginPath();
+  for (let d = -h; d < w; d += 7) { ctx.moveTo(x + d, y + h); ctx.lineTo(x + d + h, y); }
+  ctx.stroke();
+  // aufsteigende Funken in der Karte
+  for (let j = 0; j < 14; j++) {
+    const hx = hash2(st.i * 31 + j, 7), hy = hash2(j, st.i * 17 + 3);
+    const py = y + h - ((t * (6 + hx * 10) + hy * h) % h);
+    const px = x + 6 + hx * (w - 12) + Math.sin(t * 2 + j) * 2;
+    ctx.fillStyle = hexA(light, 0.4 * ((py - y) / h) * (0.6 + hv * 0.4));
+    ctx.fillRect(px, py, 1, 1);
+  }
+  // Glanzstreifen bei seltenen Karten
+  if (rar >= 1) {
+    const per = rar >= 3 ? 1.6 : rar === 2 ? 2.4 : 3.8;
+    const k = ((t + st.i * 0.37) % per) / per;
+    ctx.save();
+    ctx.translate(x - 30 + k * (w + 60), y + h / 2);
+    ctx.rotate(0.45);
+    ctx.fillStyle = gLin(-10, 0, 10, 0, [[0, 'rgba(255,255,255,0)'], [0.5, `rgba(255,255,255,${rar >= 2 ? 0.16 : 0.08})`], [1, 'rgba(255,255,255,0)']]);
+    ctx.fillRect(-10, -h, 20, h * 2);
+    ctx.restore();
+  }
+  if (b) drawEmblem(els[els.length - 1], cx, y + h - 46, 34, { alpha: 0.07 });
+  else drawTypeEmblem('forge', cx, y + h - 46, 30, { alpha: 0.07 });
+  ctx.restore();
+
+  // Rahmen
+  roundRect(x, y, w, h, 5);
+  ctx.strokeStyle = gLin(x, y, x + w, y + h, [[0, color], [1, color2]]);
+  ctx.lineWidth = 1.1 + hv * 0.7;
+  ctx.stroke();
+  roundRect(x + 3, y + 3, w - 6, h - 6, 3);
+  ctx.strokeStyle = hexA(R.color, 0.3 + 0.35 * hv);
+  ctx.lineWidth = 0.6;
+  ctx.stroke();
+  ctx.fillStyle = R.color;
+  for (const [px, py] of [[x + 3, y + 3], [x + w - 3, y + 3], [x + 3, y + h - 3], [x + w - 3, y + h - 3]]) diamond(px, py, 2);
+  if (rar >= 3) {
+    for (let j = 0; j < 4; j++) {
+      const [px, py] = perimeterPoint(x, y, w, h, (t * 0.22 + j / 4) % 1);
+      drawSparkle(px, py, 2.4 + Math.sin(t * 8 + j) * 0.8, '#fff1a0', 0.95);
+    }
+  }
+  // Nummer
+  fillCircle(x + 11, y + 11, 5.5, '#0c0714');
+  strokeCircle(x + 11, y + 11, 5.5, hexA(color, 0.8), 0.7);
+  text(`${st.i + 1}`, x + 11, y + 7.7, { size: 6, align: 'center', bold: true, color: '#e8dcf4' });
+
+  // Bild: Kreis mit Emblem
+  const ay = y + 39, ar = 27;
+  fillCircle(cx, ay, ar, gRad(cx, ay, 0, ar, [[0, hexA(color, 0.5)], [0.65, hexA(color, 0.12)], [1, hexA(color, 0.02)]]));
+  strokeCircle(cx, ay, ar, hexA(R.color, 0.9), 1);
+  ctx.save();
+  ctx.translate(cx, ay);
+  ctx.rotate(t * (0.25 + hv * 1.2) + st.i);
+  ctx.strokeStyle = hexA(light, 0.7);
+  ctx.lineWidth = 0.7;
+  ctx.beginPath();
+  for (let k = 0; k < 24; k++) {
+    const a = (k / 24) * TAU, l = k % 6 === 0 ? 3.5 : 1.5;
+    ctx.moveTo(Math.cos(a) * (ar - 1.5), Math.sin(a) * (ar - 1.5));
+    ctx.lineTo(Math.cos(a) * (ar - 1.5 - l), Math.sin(a) * (ar - 1.5 - l));
+  }
+  ctx.stroke();
+  ctx.restore();
+  strokeCircle(cx, ay, ar - 7, hexA(light, 0.22), 0.6);
+  glow(cx, ay, 28, color, 0.25 + 0.2 * hv);
+  if (b) {
+    if (els.length > 1) {
+      drawEmblem(els[0], cx - 10, ay + 1.5, 11);
+      drawEmblem(els[1], cx + 10, ay - 1.5, 11);
+      drawSparkle(cx, ay - 13, 3.6, '#ffffff', 0.9);
+    } else drawEmblem(els[0], cx, ay, 15 + hv);
   } else if (opt.mod) {
-    drawTypeIcon('forge', null, x + w / 2, y + 13, 1, 1);
-    text('WAFFE', x + w - 6, y + 6, { size: 5, align: 'right', color: '#c8bcd8', bold: true });
-    let yy = y + 30;
-    for (const l of wrapText(opt.mod.name, w - 12, 10, { title: true })) { text(l, x + w / 2, yy, { size: 10, title: true, align: 'center' }); yy += 12; }
-    text(WEAPONS[game.player.weapon].name.toUpperCase(), x + w / 2, yy, { size: 5.5, align: 'center', color, bold: true });
-    yy += 14;
-    for (const l of wrapText(opt.mod.desc, w - 14, 6.5)) { text(l, x + w / 2, yy, { size: 6.5, align: 'center', color: '#ece4f2' }); yy += 8.5; }
+    const id = game.player.weapon, spr = SPR[id], [gx, gy] = WEAPON_GRIP[id];
+    const len = (spr.w - gx) * 2;
+    const ang = -Math.PI / 4 + Math.sin(t * 1.5) * 0.06;
+    drawRotated(spr, cx - Math.cos(ang) * len * 0.45, ay - Math.sin(ang) * len * 0.45, ang, gx, gy, { scale: 2 });
+    drawTypeEmblem('forge', cx + 13, ay + 12, 5);
+  }
+  if (opt.up) {
+    const bx = cx + 21, by = ay - 20;
+    fillCircle(bx, by, 6, '#0c0714');
+    strokeCircle(bx, by, 6, '#ffd86a', 0.8);
+    text('+1', bx, by - 3.4, { size: 5.5, align: 'center', bold: true, color: '#ffd86a' });
+  }
+
+  // Texte
+  let yy = y + 71;
+  pill(cx, yy, (b ? R.name : 'Schmiede').toUpperCase(), R.color, R.color);
+  yy += 13;
+  for (const l of wrapText(b ? boonName(b) : opt.mod.name, w - 14, 10.5, { title: true })) {
+    text(l, cx, yy, { size: 10.5, title: true, align: 'center', color: '#fbf4ff' });
+    yy += 12;
+  }
+  const chip = b ? (b.kind === 'slot' ? `${SLOT_NAMES[b.slot].toUpperCase()} · ${SLOT_KEYS[b.slot]}` : 'PASSIV') : WEAPONS[game.player.weapon].name.toUpperCase();
+  pill(cx, yy, chip, color, light, 4.8);
+  yy += 11;
+  const tagCol = opt.tag.startsWith('NEU') ? '#8affb8' : opt.tag.startsWith('ERSETZT') ? '#ff9a6a' : '#ffd86a';
+  text(opt.tag, cx, yy, { size: 5.2, align: 'center', bold: true, color: tagCol });
+  yy += 8;
+  ornamentLine(cx, yy, w / 2 - 14, color);
+  yy += 5;
+  yy = richText(b ? boonDesc(b) : opt.mod.desc, b ? String(boonVal(b)) : null, cx, yy, w - 16, 6.4, '#ece4f2', light);
+  if (opt.up && opt.prevVal !== undefined && opt.prevVal !== boonVal(b)) {
+    text(`Wert ${opt.prevVal} → ${boonVal(b)}`, cx, yy + 1, { size: 5.5, align: 'center', bold: true, color: '#ffd86a' });
+    yy += 8;
+  }
+  if (b && b.kind === 'slot' && b.slot !== 'dash') {
+    yy += 2;
+    for (const l of wrapText(STATUS_TEXT[b.el], w - 18, 5.3, { italic: true })) {
+      text(l, cx, yy, { size: 5.3, align: 'center', color: '#9a8ab0', italic: true });
+      yy += 6.6;
+    }
+  }
+  // Fußzeile: Element-Stufe mit Rauten
+  if (b) {
+    els.forEach((el, k) => {
+      const fy = y + h - 11 - (els.length - 1 - k) * 9;
+      const now = resonance(el), E = ELEMENTS[el];
+      drawEmblem(el, x + 12, fy, 2.8);
+      text(`${E.name}-Stufe`, x + 18, fy - 3, { size: 5, bold: true, color: E.color });
+      const n = Math.min(10, Math.max(5, now + 1));
+      for (let j = 0; j < n; j++) {
+        const px = x + w - 10 - (n - 1 - j) * 5.5;
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        diamond(px, fy, 2.4);
+        if (j < now) { ctx.fillStyle = E.color; diamond(px, fy, 1.9); }
+        else if (j === now) {
+          const p = 0.5 + Math.sin(t * 6) * 0.5;
+          ctx.fillStyle = hexA(E.light, 0.4 + 0.6 * p);
+          diamond(px, fy, 1.9 + p * 0.5);
+        }
+      }
+    });
   }
 }
 
